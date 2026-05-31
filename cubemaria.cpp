@@ -1,122 +1,189 @@
-//Maria Isabel Solis Y Valerie Marmolejo Molina
-
 #include <iostream>
+#include <set>
+#include <queue>
+#include <array>
+#include <map>
 #include <vector>
-#include <string>
-
+#include <climits>
 using namespace std;
 
-//variables globales
-int R, C; //filas y columnas del grid
+// Funciones para el movimiento del cubo
+array<int,6> norte(array<int,6> orientacion){
+    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
+        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
+    return {nor, sur, abajo, arriba, este, oeste};
+}
 
-struct state {
-    int fila, col; //posicion del cubo en el grid
-    int caras[6]; //caras del cubo
-    bool oroEnCara[6]; //si la cara tiene oro o no 
-    vector<pair<int, int>> oroEnGrid; //coordenadas del oro en el grid 
+array<int,6> sur(array<int,6> orientacion){
+    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
+        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
+    return {sur, nor, arriba, abajo, este, oeste};
+}
 
+array<int,6> este(array<int,6> orientacion){
+    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
+        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
+    return {este, oeste, nor, sur, abajo, arriba};
+}
 
+array<int,6> oeste(array<int,6> orientacion){
+    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
+        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
+    return {oeste, este, nor, sur, arriba, abajo};
+}
 
-    bool operator<(const state other) const {
-        bool ans = false; 
-        bool diferencia = false; //para saber cuando no se sigue comparando
+// Estado
+struct state{
+    pair<int, int> posicion;
+    array<int,6> orientacion;
+    int carasOro;
+    int celdasOro;
+};
 
-        //si aun no se ha encontrado la diferencia entonces se siguen comparando las variables del struct
-        if (diferencia == false && fila != other.fila){
-            ans = fila < other.fila;
-            diferencia = true; //ya se encontro la diferencia entonces se detien la comparacion
-        }
-        if (diferencia == false && col != other.col){
-            ans = col < other.col;
-            diferencia = true;
-        }
-        for (int i = 0; i < 6; i++){
-            if (diferencia == false && caras[i] != other.caras[i]){
-                ans = caras[i] < other.caras[i];
-                diferencia = true;
-            }
-        }
-        for (int i = 0; i < 6; i++){
-            if (diferencia == false && oroEnCara[i] != other.oroEnCara[i]){
-                ans = oroEnCara[i] < other.oroEnCara[i];
-                diferencia = true;
-            }
-        }
-        if (diferencia == false){ 
-            ans = oroEnGrid < other.oroEnGrid;
-        }
+// struct para comparar los estados en el mapa
+struct classComp{
+    bool operator()(const state& est1, const state& est2) const{
 
+        bool ans = est1.celdasOro < est2.celdasOro;
+        if(est1.posicion != est2.posicion)
+            ans = est1.posicion < est2.posicion;
+        if(est1.orientacion != est2.orientacion)
+            ans = est1.orientacion < est2.orientacion;
+        if(est1.carasOro != est2.carasOro)
+            ans = est1.carasOro < est2.carasOro;
         return ans;
     }
 };
 
-//movemos el cubo al norte
-void moverNorte(state &s){
-    int ans = s.caras[0]; //cara de abajo temporal 
-    s.caras[0] = s.caras[2]; //la cara de abajo ahora es la de atras
-    s.caras[2] = s.caras[1]; //la cara de atras ahora es la de arriba
-    s.caras[1] = s.caras[3]; //la cara de arriba ahora es la de adelante 
-    s.caras[3] = ans; //la cara de adelante ahora es la de abajo
-
-    s.fila = s.fila - 1; //se mueve el cubo hacia el norte si el cuba antes estaba en la fila 5, si se mueve al norte pasa a estar en la fila 4
-
-}
-
-//movemos el cubo al sur
-void moverSur(state &s){
-    int ans = s.caras[0]; // cara de abajo temporal 
-    s.caras[0] = s.caras[3]; // la cara de abajo ahora es la de adelante
-    s.caras[3] = s.caras[1]; // la cara de adelante ahora es la de arriba
-    s.caras[1] = s.caras[2]; // la cara de arriba ahora es la de atras
-    s.caras[2] = ans; // la cara de atras ahora es la de abajo
-
-    s.fila = s.fila + 1; //se mueve el cubo hacia el sur si el cuba antes estaba en la fila 5, si se mueve al sur pasa a estar en la fila 6
-
-
-}
-
-//movemos el cubo al este 
-void moverEste(state &s){
-    int ans = s.caras[0]; // cara de abajo temporal 
-    s.caras[0] = s.caras[4]; // la cara de abajo ahora es la de la izquierda
-    s.caras[4] = s.caras[1]; // la cara de la izquierda ahora es la de arriba
-    s.caras[1] = s.caras[5]; // la cara de arriba ahora es la de la derecha
-    s.caras[5] = ans; // la cara de la derecha ahora es la de abajo
-
-    s.col = s.col + 1; //se mueve el cubo hacia el este si el cuba antes estaba en la columna 5, si se mueve al este pasa a estar en la columna 6
-
-}
-
-//movemos el cubo al oeste 
-void moverOeste(state &s){
-    int ans = s.caras[0]; // cara de abajo temporal 
-    s.caras[0] = s.caras[5]; // la cara de abajo ahora es la de la derecha
-    s.caras[5] = s.caras[1]; // la cara de la derecha ahora es la de arriba
-    s.caras[1] = s.caras[4]; // la cara de arriba ahora es la de la izquierda
-    s.caras[4] = ans; // la cara de la izquierda ahora es la de abajo
-
-    s.col = s.col - 1; //se mueve el cubo hacia el oeste si el cuba antes estaba en la columna 5, si se mueve al oeste pasa a estar en la columna 4
-
-}
-
-//la funcion se asegura de que el cubo no se salga del grid dependiendo del tamaño de este R siendo filas y C columnas
-bool esValido(int f, int c){
-    if(f < 0 || f >= R || c < 0 || c >= C){
-        return false;
+// Functor para la priority queue que se utilizara en dijkstra
+struct cmp{
+    bool operator()(const pair<int,state>& a, const pair<int,state>& b) const{
+        return a.first > b.first; 
     }
-    return true;
-}
+};
 
+map<state, int, classComp> dist;
+
+map<state, int, classComp> dijkstra(vector<string> grid, state estadoInicial, int A, int B){
+    dist[estadoInicial] = 0;
+    vector<pair<int,int>> direccion = {{-1,0}, {0,-1},{1,0},{0,1}};
+    priority_queue<pair<int,state>, vector<pair<int,state>>, cmp> pq;
+    pq.push({0,estadoInicial});
+
+    while(!pq.empty()){
+        int du = pq.top().first;
+        state estadoActual = pq.top().second;
+        pq.pop();
+
+        if(dist[estadoActual] == du){
+            for(int d = 0; d < 4; d++){
+                int nuevor = estadoActual.posicion.first + direccion[d].first;
+                int nuevoc = estadoActual.posicion.second + direccion[d].second;
+
+                int nr = estadoActual.posicion.first;
+                int nc = estadoActual.posicion.second;
+                array<int,6> nuevaOrientacion; 
+
+                if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
+                    nr = nuevor;
+                    nc = nuevoc;
+
+                    if(d == 0) 
+                        nuevaOrientacion = norte(estadoActual.orientacion);
+                    else if(d == 1) 
+                        nuevaOrientacion = oeste(estadoActual.orientacion);
+                    else if(d == 2) 
+                        nuevaOrientacion = sur(estadoActual.orientacion);
+                    else 
+                        nuevaOrientacion = este(estadoActual.orientacion);
+
+                    int caraAbajo = nuevaOrientacion[0];
+
+                    bool tieneOroCara = (estadoActual.carasOro & (1 << caraAbajo));
+                    bool tieneOroCelda = (estadoActual.celdasOro & (1 << (nr*grid[0].size() + nc)));
+                    
+                    int costo = 0;
+
+                    int nuevasCarasOro = estadoActual.carasOro;
+                    int nuevasCeldasOro = estadoActual.celdasOro;
+
+                    if(tieneOroCara && !tieneOroCelda){
+                        costo = A;
+                        nuevasCarasOro ^= (1 << caraAbajo); // Hacer corrimiento de bits para quitar el oro de la cara
+                        nuevasCeldasOro ^= (1 << (nr*grid[0].size() + nc)); // Hacer corrimiento de bits para poner la celda en 1
+                    }
+                    else if(!tieneOroCara && tieneOroCelda){
+                        costo = B;
+                        nuevasCarasOro ^= (1 << caraAbajo); // Hacer corrimiento de bits para poner el oro en la cara
+                        nuevasCeldasOro ^= (1 << (nr*grid[0].size() + nc)); // Hacer corrimiento de bits para quitar la celda del oro
+                
+                    }
+                    else{
+                        costo = A;
+                    }
+
+                    state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
+
+                    if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
+                        dist[nuevoEstado] = du + costo;
+                        pq.push({du + costo, nuevoEstado});
+                    }
+                    
+                }
+            }
+        }
+    }
+    return dist;
+}
 
 int main(){
 
-    int casos; 
+    int casos;
     cin >> casos;
-
-    cin >> R >> C; //filas y columnas del grid
-
+    dist.clear();
     
+    for(int i = 0; i < casos; i++){
+        int filas, columnas, A, B;
+        cin >> filas >> columnas >> A >> B;
 
+        vector<string> grid(filas);
 
+        for(int j = 0; j < filas; j++){
+            cin >> grid[j];
+        }
 
+        array<int,6> orientacionInicial = {1, 6, 5, 4, 3, 2};
+        int carasOro = 0;
+        int celdasOro = 0;
+        pair<int,int> posicionInicial;
+
+        for(int i = 0; i < filas; i++){
+            for(int j = 0; j < columnas; j++){
+                if(grid[i][j] == 'G')
+                    celdasOro |= (1 << (i * columnas + j));
+                if(grid[i][j] == 'S')
+                    posicionInicial = {i,j};
+            }
+        }
+        
+        state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
+        map<state, int, classComp> dist = dijkstra(grid, estadoInicial, A, B);
+
+        int ans = INT_MAX;
+        for(map<state,int,classComp>:: iterator it = dist.begin(); it != dist.end(); it++){
+            if(it->first.celdasOro == 0){
+                if(it->second < ans){
+                    ans = it->second;
+                }
+            }
+        }
+
+        if(ans != INT_MAX)
+            printf("Screw you guys, I got all the gold for %d cost!", ans);
+        else
+            printf("Oh my God, they killed Kenny!");
+        
+        printf("\n");
+    }
+    return 0;
 }

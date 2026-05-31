@@ -36,7 +36,7 @@ struct state{
     pair<int, int> posicion;
     array<int,6> orientacion;
     int carasOro;
-    set<pair<int,int>> celdasOro;
+    long long int celdasOro;
 };
 
 // struct para comparar los estados en el mapa
@@ -62,73 +62,81 @@ struct cmp{
 
 map<state, int, classComp> dist;
 
-map<state, int, classComp> dijkstra(vector<string> grid, state estadoInicial, int A, int B){
+int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
     dist[estadoInicial] = 0;
     vector<pair<int,int>> direccion = {{-1,0}, {0,-1},{1,0},{0,1}};
     priority_queue<pair<int,state>, vector<pair<int,state>>, cmp> pq;
     pq.push({0,estadoInicial});
+    bool flag = false;
+    int costoFinal = INT_MAX;
 
-    while(!pq.empty()){
+    while(!pq.empty() && !flag){
         int du = pq.top().first;
         state estadoActual = pq.top().second;
         pq.pop();
 
         if(dist[estadoActual] == du){
-            for(int d = 0; d < 4; d++){
-                int nuevor = estadoActual.posicion.first + direccion[d].first;
-                int nuevoc = estadoActual.posicion.second + direccion[d].second;
+            if(estadoActual.celdasOro == 0 && estadoActual.carasOro == 63){
+                flag = true;
+                costoFinal = du;
+            }
+            else{
+                for(int d = 0; d < 4; d++){
+                    int nuevor = estadoActual.posicion.first + direccion[d].first;
+                    int nuevoc = estadoActual.posicion.second + direccion[d].second;
 
-                int nr = estadoActual.posicion.first;
-                int nc = estadoActual.posicion.second;
-                array<int,6> nuevaOrientacion; 
+                    int nr = estadoActual.posicion.first;
+                    int nc = estadoActual.posicion.second;
+                    array<int,6> nuevaOrientacion; 
 
-                if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
-                    nr = nuevor;
-                    nc = nuevoc; 
+                    if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
+                        nr = nuevor;
+                        nc = nuevoc; 
 
-                    if(d == 0) 
-                        nuevaOrientacion = norte(estadoActual.orientacion);
-                    else if(d == 1) 
-                        nuevaOrientacion = oeste(estadoActual.orientacion);
-                    else if(d == 2) 
-                        nuevaOrientacion = sur(estadoActual.orientacion);
-                    else 
-                        nuevaOrientacion = este(estadoActual.orientacion);
+                        if(d == 0) 
+                            nuevaOrientacion = norte(estadoActual.orientacion);
+                        else if(d == 1) 
+                            nuevaOrientacion = oeste(estadoActual.orientacion);
+                        else if(d == 2) 
+                            nuevaOrientacion = sur(estadoActual.orientacion);
+                        else 
+                            nuevaOrientacion = este(estadoActual.orientacion);
 
-                    int caraAbajo = nuevaOrientacion[0];
-                    int costo = 0;
-                    set<pair<int,int>> nuevasCeldasOro = estadoActual.celdasOro;
-                    int nuevasCarasOro = estadoActual.carasOro;
+                        int caraAbajo = nuevaOrientacion[0];
+                        int costo = 0;
+                        long long int nuevasCeldasOro = estadoActual.celdasOro;
+                        int nuevasCarasOro = estadoActual.carasOro;
 
-                    bool celdaTiene = estadoActual.celdasOro.count({nr, nc});
-                    bool caraTiene = (estadoActual.carasOro & (1 << (caraAbajo - 1)));
+                        bool celdaTiene = (estadoActual.celdasOro & (1LL << (nr*grid[0].size() + nc)));
+                        bool caraTiene = (estadoActual.carasOro & (1 << (caraAbajo - 1)));
 
-                    if(celdaTiene && !caraTiene){
-                        costo = B;
-                        nuevasCeldasOro.erase({nr, nc});
-                        nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                        if(celdaTiene && !caraTiene){
+                            costo = B;
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
+                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                        }
+                        else if(!celdaTiene && caraTiene){
+                            costo = A;
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
+                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                        }
+                        else{
+                            costo = A;
+                        }
+
+                        state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
+
+                        if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
+                            dist[nuevoEstado] = du + costo;
+                            pq.push({du + costo, nuevoEstado});
+                        }
+                        
                     }
-                    else if(!celdaTiene && caraTiene){
-                        costo = A;
-                        nuevasCeldasOro.insert({nr, nc});
-                        nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
-                    }
-                    else{
-                        costo = A;
-                    }
-
-                    state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
-
-                    if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
-                        dist[nuevoEstado] = du + costo;
-                        pq.push({du + costo, nuevoEstado});
-                    }
-                    
                 }
             }
         }
     }
-    return dist;
+    return costoFinal;
 }
 
 int main(){
@@ -150,32 +158,23 @@ int main(){
 
         array<int,6> orientacionInicial = {1, 6, 5, 4, 3, 2};
         int carasOro = 0;
-        set<pair<int,int>> celdasOro;
+        long long int celdasOro = 0;
         pair<int,int> posicionInicial;
 
         for(int i = 0; i < filas; i++){
             for(int j = 0; j < columnas; j++){
                 if(grid[i][j] == 'G')
-                    celdasOro.insert({i,j});
+                    celdasOro = celdasOro ^ (1LL << (i * columnas + j));
                 if(grid[i][j] == 'S')
                     posicionInicial = {i,j};
             }
         }
         
         state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
-        dijkstra(grid, estadoInicial, A, B);
+        int costo = dijkstra(grid, estadoInicial, A, B);
 
-        int ans = INT_MAX;
-        for(map<state,int,classComp>:: iterator it = dist.begin(); it != dist.end(); it++){
-            if(it->first.celdasOro.empty() && it->first.carasOro == 63){
-                if(it->second < ans){
-                    ans = it->second;
-                }
-            }
-        }
-
-        if(ans != INT_MAX)
-            printf("Screw you guys, I got all the gold for %d cost!", ans);
+        if(costo != INT_MAX)
+            printf("Screw you guys, I got all the gold for %d cost!", costo);
         else
             printf("Oh my God, they killed Kenny!");
         

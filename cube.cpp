@@ -36,7 +36,7 @@ struct state{
     pair<int, int> posicion;
     array<int,6> orientacion;
     int carasOro;
-    vector<pair<int,int>> celdasOro;
+    set<pair<int,int>> celdasOro;
 };
 
 // struct para comparar los estados en el mapa
@@ -96,7 +96,30 @@ map<state, int, classComp> dijkstra(vector<string> grid, state estadoInicial, in
                         nuevaOrientacion = este(estadoActual.orientacion);
 
                     int caraAbajo = nuevaOrientacion[0];
+                    
+                    int costo = 0;
+                    if(/*La cara tiene oro y la celda no tiene*/){
+                        costo = A;
+                        // Agregar celda al set y hacer corrimiento de bits para la cara
+                    }
+                    else if(/*cara no tiene oro y la celda si*/){
+                        costo = B
+                        // Hacer corrimiento de bits para poner la cara en 1 y quitar la celda del set
+                    }
+                    else if(/*cara tiene oro y la celda tambien*/){
+                        costo = A
+                        // no se hace nada
+                    }
+                    else{
+                        costo = A;
+                    }
 
+                    state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
+
+                    if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
+                        dist[nuevoEstado] = du + costo;
+                        pq.push({du + costo, nuevoEstado});
+                    }
                     
                 }
             }
@@ -109,7 +132,8 @@ int main(){
 
     int casos;
     cin >> casos;
-
+    dist.clear();
+    
     for(int i = 0; i < casos; i++){
         int filas, columnas, A, B;
         cin >> filas >> columnas >> A >> B;
@@ -122,20 +146,36 @@ int main(){
 
         array<int,6> orientacionInicial = {1, 6, 5, 4, 3, 2};
         int carasOro = 0;
-        vector<pair<int,int>> celdasOro;
+        set<pair<int,int>> celdasOro;
         pair<int,int> posicionInicial;
 
         for(int i = 0; i < filas; i++){
             for(int j = 0; j < columnas; j++){
                 if(grid[i][j] == 'G')
-                    celdasOro.push_back({i,j});
+                    celdasOro.insert({i,j});
                 if(grid[i][j] == 'S')
                     posicionInicial = {i,j};
             }
         }
         
         state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
-        dijkstra(grid, estadoInicial, A, B);
+        map<state, int, classComp> dist = dijkstra(grid, estadoInicial, A, B);
+
+        int ans = INT_MAX;
+        for(map<state,int,classComp>:: iterator it = dist.begin(); it != dist.end(); it++){
+            if(it->first.celdasOro.empty()){
+                if(it->second < ans){
+                    ans = it->second;
+                }
+            }
+        }
+
+        if(ans != INT_MAX)
+            printf("Screw you guys, I got all the gold for %d cost!", ans);
+        else
+            printf("Oh my God, they killed Kenny!");
+        
+        printf("\n");
     }
     return 0;
 }

@@ -45,9 +45,9 @@ struct classComp{
         bool ans = est1.celdasOro < est2.celdasOro;
         if(est1.posicion != est2.posicion)
             ans = est1.posicion < est2.posicion;
-        if(est1.orientacion != est2.orientacion)
+        else if(est1.orientacion != est2.orientacion)
             ans = est1.orientacion < est2.orientacion;
-        if(est1.carasOro != est2.carasOro)
+        else if(est1.carasOro != est2.carasOro)
             ans = est1.carasOro < est2.carasOro;
         return ans;
     }
@@ -84,7 +84,7 @@ map<state, int, classComp> dijkstra(vector<string> grid, state estadoInicial, in
 
                 if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
                     nr = nuevor;
-                    nc = nuevoc;
+                    nc = nuevoc; 
 
                     if(d == 0) 
                         nuevaOrientacion = norte(estadoActual.orientacion);
@@ -96,19 +96,22 @@ map<state, int, classComp> dijkstra(vector<string> grid, state estadoInicial, in
                         nuevaOrientacion = este(estadoActual.orientacion);
 
                     int caraAbajo = nuevaOrientacion[0];
-                    
                     int costo = 0;
-                    if(/*La cara tiene oro y la celda no tiene*/){
+                    set<pair<int,int>> nuevasCeldasOro = estadoActual.celdasOro;
+                    int nuevasCarasOro = estadoActual.carasOro;
+
+                    bool celdaTiene = estadoActual.celdasOro.count({nr, nc});
+                    bool caraTiene = (estadoActual.carasOro & (1 << (caraAbajo - 1)));
+
+                    if(celdaTiene && !caraTiene){
+                        costo = B;
+                        nuevasCeldasOro.erase({nr, nc});
+                        nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                    }
+                    else if(!celdaTiene && caraTiene){
                         costo = A;
-                        // Agregar celda al set y hacer corrimiento de bits para la cara
-                    }
-                    else if(/*cara no tiene oro y la celda si*/){
-                        costo = B
-                        // Hacer corrimiento de bits para poner la cara en 1 y quitar la celda del set
-                    }
-                    else if(/*cara tiene oro y la celda tambien*/){
-                        costo = A
-                        // no se hace nada
+                        nuevasCeldasOro.insert({nr, nc});
+                        nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
                     }
                     else{
                         costo = A;
@@ -132,11 +135,12 @@ int main(){
 
     int casos;
     cin >> casos;
-    dist.clear();
+    
     
     for(int i = 0; i < casos; i++){
         int filas, columnas, A, B;
         cin >> filas >> columnas >> A >> B;
+        dist.clear();
 
         vector<string> grid(filas);
 
@@ -159,11 +163,11 @@ int main(){
         }
         
         state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
-        map<state, int, classComp> dist = dijkstra(grid, estadoInicial, A, B);
+        dijkstra(grid, estadoInicial, A, B);
 
         int ans = INT_MAX;
         for(map<state,int,classComp>:: iterator it = dist.begin(); it != dist.end(); it++){
-            if(it->first.celdasOro.empty()){
+            if(it->first.celdasOro.empty() && it->first.carasOro == 63){
                 if(it->second < ans){
                     ans = it->second;
                 }

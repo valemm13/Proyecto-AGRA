@@ -1,70 +1,78 @@
 #include <iostream>
-#include <set>
+#include <climits>
 #include <queue>
-#include <array>
 #include <map>
 #include <vector>
-#include <climits>
 using namespace std;
 
-// Funciones para el movimiento del cubo
-array<int,6> norte(const array<int,6>& orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {nor, sur, arriba, abajo, este, oeste};
-}
+// Funcion que hace la rotacion dependiendo la direccion
+int rotacion(int carasOro, int movimiento[6]){
+    int ans = 0; 
 
-array<int,6> sur(const array<int,6>& orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {sur, nor, abajo, arriba, este, oeste};
-}
-
-array<int,6> este(const array<int,6>& orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {este, oeste, nor, sur, arriba, abajo};
-}
-
-array<int,6> oeste(const array<int,6>& orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {oeste, este, nor, sur, abajo, arriba};
-}
-
-int arrayToInt(const array<int,6>& arr){
-    int valor = 0;
-    for(int i = 0; i < 6; i++){
-        valor = valor * 10 + arr[i];
-    }
-    return valor;
-}
-
-array<int,6> intToArray(int valor){
-    array<int,6> arr;
     for(int i = 5; i >= 0; i--){
-        arr[i] = valor % 10;
-        valor /= 10;
+        int bit = (carasOro >> i) & 1; 
+
+        if(bit == 1){
+            int destino; 
+
+            if(movimiento[i] != -1){
+                destino = movimiento[i];
+
+            } else {
+                destino = i;
+            }
+
+            ans = ans | (1 << destino);
+
+        }
     }
-    return arr;
+    return ans;
+}
+
+// Funciones para el movimiento del cubo
+int movimientoNorte[6] = {3,2,0,1,-1,-1};
+int movimientoSur[6] = {2,3,1,0,-1,-1};
+int movimientoEste[6] = {5,4,-1,-1,0,1};
+int movimientoOeste[6] = {4,5,-1,-1,1,0};
+
+
+
+int norte(int carasOro){ 
+    int ans = rotacion(carasOro, movimientoNorte);
+    return ans;
+}
+
+int sur(int carasOro){ 
+    int ans = rotacion(carasOro,movimientoSur);
+    return ans;
+}
+
+int este(int carasOro){
+    int ans = rotacion(carasOro,movimientoEste);
+
+    return ans;
+
+}
+
+int oeste(int carasOro){ 
+    int ans = rotacion(carasOro,movimientoOeste);
+
+    return ans;
 }
 
 // Estado
 struct state{
     pair<int, int> posicion;
-    int orientacion;
     int carasOro;
-    long long int celdasOro;
+    int celdasOro;
 };
 
 // struct para comparar los estados en el mapa
 struct classComp{
-    bool operator()(const state& est1, const state& est2) const{
+    bool operator()(const state& est1, const state& est2) const {
         bool ans = est1.celdasOro < est2.celdasOro;
         if(est1.posicion != est2.posicion)
             ans = est1.posicion < est2.posicion;
-        else if(est1.orientacion != est2.orientacion)
-            ans = est1.orientacion < est2.orientacion;
         else if(est1.carasOro != est2.carasOro)
             ans = est1.carasOro < est2.carasOro;
         return ans;
@@ -78,9 +86,8 @@ struct cmp{
     }
 };
 
-map<state, int, classComp> dist;
-
-int dijkstra(vector<string>& grid, state estadoInicial, int A, int B){
+int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
+    map<state, int, classComp> dist;
     dist[estadoInicial] = 0;
     vector<pair<int,int>> direccion = {{-1,0}, {0,-1},{1,0},{0,1}};
     priority_queue<pair<int,state>, vector<pair<int,state>>, cmp> pq;
@@ -93,9 +100,7 @@ int dijkstra(vector<string>& grid, state estadoInicial, int A, int B){
         state estadoActual = pq.top().second;
         pq.pop();
 
-        map<state, int, classComp>::iterator it = dist.find(estadoActual);
-
-        if(it != dist.end() && du == it->second){
+        if(dist[estadoActual] == du){
             if(estadoActual.celdasOro == 0 && estadoActual.carasOro == 63){
                 flag = true;
                 costoFinal = du;
@@ -107,52 +112,45 @@ int dijkstra(vector<string>& grid, state estadoInicial, int A, int B){
 
                     int nr = estadoActual.posicion.first;
                     int nc = estadoActual.posicion.second;
-
-                    array<int,6> orientacionArr = intToArray(estadoActual.orientacion);
-                    array<int,6> nuevaOrientacion; 
+                    int nuevaOrientacion; 
 
                     if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
                         nr = nuevor;
                         nc = nuevoc; 
 
                         if(d == 0) 
-                            nuevaOrientacion = norte(orientacionArr);
+                            nuevaOrientacion = norte(estadoActual.carasOro);
                         else if(d == 1) 
-                            nuevaOrientacion = oeste(orientacionArr);
+                            nuevaOrientacion = oeste(estadoActual.carasOro);
                         else if(d == 2) 
-                            nuevaOrientacion = sur(orientacionArr);
+                            nuevaOrientacion = sur(estadoActual.carasOro);
                         else 
-                            nuevaOrientacion = este(orientacionArr);
+                            nuevaOrientacion = este(estadoActual.carasOro);
 
-                        int nuevaOrientacionInt = arrayToInt(nuevaOrientacion);
-
-
-                        int caraAbajo = nuevaOrientacion[0];
                         int costo = 0;
-                        long long int nuevasCeldasOro = estadoActual.celdasOro;
-                        int nuevasCarasOro = estadoActual.carasOro;
+                        int nuevasCeldasOro = estadoActual.celdasOro;
+                        int nuevasCarasOro = nuevaOrientacion;
 
-                        bool celdaTiene = (estadoActual.celdasOro & (1LL << (nr*grid[0].size() + nc)));
-                        bool caraTiene = (estadoActual.carasOro & (1 << (caraAbajo - 1)));
+                        bool celdaTiene = (estadoActual.celdasOro & (1 << (nr * grid[0].size() + nc)));
+                        bool caraTiene = (nuevasCarasOro & 1);
 
                         if(celdaTiene && !caraTiene){
                             costo = B;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
-                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else if(!celdaTiene && caraTiene){
                             costo = A;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
-                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else{
                             costo = A;
                         }
 
-                        state nuevoEstado = {{nr,nc}, nuevaOrientacionInt, nuevasCarasOro, nuevasCeldasOro};
+                        state nuevoEstado = {{nr,nc}, nuevasCarasOro, nuevasCeldasOro};
 
-                        map<state, int, classComp>::iterator it = dist.find(nuevoEstado);
-                        if(it == dist.end() || du + costo < it->second){
+                        if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
                             dist[nuevoEstado] = du + costo;
                             pq.push({du + costo, nuevoEstado});
                         }
@@ -169,12 +167,10 @@ int main(){
 
     int casos;
     cin >> casos;
-    
-    
+
     for(int i = 0; i < casos; i++){
         int filas, columnas, A, B;
         cin >> filas >> columnas >> A >> B;
-        dist.clear();
 
         vector<string> grid(filas);
 
@@ -182,21 +178,20 @@ int main(){
             cin >> grid[j];
         }
 
-        int orientacionInicial = 165432;;
         int carasOro = 0;
-        long long int celdasOro = 0;
+        int celdasOro = 0;
         pair<int,int> posicionInicial;
 
         for(int i = 0; i < filas; i++){
             for(int j = 0; j < columnas; j++){
                 if(grid[i][j] == 'G')
-                    celdasOro = celdasOro ^ (1LL << (i * columnas + j));
+                    celdasOro = celdasOro ^ (1 << (i * columnas + j));
                 if(grid[i][j] == 'S')
                     posicionInicial = {i,j};
             }
         }
         
-        state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
+        state estadoInicial = {posicionInicial, carasOro, celdasOro};
         int costo = dijkstra(grid, estadoInicial, A, B);
 
         if(costo != INT_MAX)

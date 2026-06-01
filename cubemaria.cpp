@@ -80,7 +80,7 @@ struct cmp{
 
 map<state, int, classComp> dist;
 
-int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
+int dijkstra(vector<string>& grid, state estadoInicial, int A, int B){
     dist[estadoInicial] = 0;
     vector<pair<int,int>> direccion = {{-1,0}, {0,-1},{1,0},{0,1}};
     priority_queue<pair<int,state>, vector<pair<int,state>>, cmp> pq;
@@ -93,7 +93,9 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
         state estadoActual = pq.top().second;
         pq.pop();
 
-        if(dist[estadoActual] == du){
+        map<state, int, classComp>::iterator it = dist.find(estadoActual);
+
+        if(it != dist.end() && du == it->second){
             if(estadoActual.celdasOro == 0 && estadoActual.carasOro == 63){
                 flag = true;
                 costoFinal = du;
@@ -149,7 +151,7 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
 
                         state nuevoEstado = {{nr,nc}, nuevaOrientacionInt, nuevasCarasOro, nuevasCeldasOro};
 
-                        auto it = dist.find(nuevoEstado);
+                        map<state, int, classComp>::iterator it = dist.find(nuevoEstado);
                         if(it == dist.end() || du + costo < it->second){
                             dist[nuevoEstado] = du + costo;
                             pq.push({du + costo, nuevoEstado});

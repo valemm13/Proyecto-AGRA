@@ -1,52 +1,78 @@
 #include <iostream>
-#include <set>
+#include <climits>
 #include <queue>
-#include <array>
 #include <map>
 #include <vector>
 using namespace std;
 
+// Funcion que hace la rotacion dependiendo la direccion
+int rotacion(int carasOro, int movimiento[6]){
+    int nuevoArray[6];
+    int arrayOriginal[6];
+
+    int x = carasOro;
+    for(int i = 0; i < 6; i++){
+        arrayOriginal[i] = x % 2;
+        x /= 2;
+    }
+
+    for(int i = 0; i < 6; i++){
+        if(movimiento[i] != -1){
+            nuevoArray[movimiento[i]] = arrayOriginal[i];
+        }else{
+            nuevoArray[i] = arrayOriginal[i];
+        }
+    }
+
+    int ans = 0;
+    for(int i = 5; i >= 0; i--){
+        ans = ans * 2 + nuevoArray[i];
+    }
+
+    return ans;
+}
+
 // Funciones para el movimiento del cubo
-array<int,6> norte(array<int,6> orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {nor, sur, abajo, arriba, este, oeste};
+int norte(int carasOro){ 
+    int movimientoNorte[6] = {3,2,0,1,-1,-1};
+    int ans = rotacion(carasOro,movimientoNorte);
+    return ans;
 }
 
-array<int,6> sur(array<int,6> orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {sur, nor, arriba, abajo, este, oeste};
+int sur(int carasOro){ 
+    int movimientoSur[6] = {2,3,1,0,-1,-1};
+    int ans = rotacion(carasOro,movimientoSur);
+    return ans;
 }
 
-array<int,6> este(array<int,6> orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {este, oeste, nor, sur, abajo, arriba};
+int este(int carasOro){
+    int movimientoEste[6] = {5,4,-1,-1,0,1};
+    int ans = rotacion(carasOro,movimientoEste);
+
+    return ans;
+
 }
 
-array<int,6> oeste(array<int,6> orientacion){
-    int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
-        sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
-    return {oeste, este, nor, sur, arriba, abajo};
+int oeste(int carasOro){ 
+    int movimientoOeste[6] = {4,5,-1,-1,1,0};
+    int ans = rotacion(carasOro,movimientoOeste);
+
+    return ans;
 }
 
 // Estado
 struct state{
     pair<int, int> posicion;
-    array<int,6> orientacion;
     int carasOro;
-    long long int celdasOro;
+    int celdasOro;
 };
 
 // struct para comparar los estados en el mapa
 struct classComp{
-    bool operator()(const state& est1, const state& est2) const{
+    bool operator()(const state& est1, const state& est2) const {
         bool ans = est1.celdasOro < est2.celdasOro;
         if(est1.posicion != est2.posicion)
             ans = est1.posicion < est2.posicion;
-        else if(est1.orientacion != est2.orientacion)
-            ans = est1.orientacion < est2.orientacion;
         else if(est1.carasOro != est2.carasOro)
             ans = est1.carasOro < est2.carasOro;
         return ans;
@@ -60,9 +86,8 @@ struct cmp{
     }
 };
 
-map<state, int, classComp> dist;
-
-int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
+int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
+    map<state, int, classComp> dist;
     dist[estadoInicial] = 0;
     vector<pair<int,int>> direccion = {{-1,0}, {0,-1},{1,0},{0,1}};
     priority_queue<pair<int,state>, vector<pair<int,state>>, cmp> pq;
@@ -87,44 +112,43 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
 
                     int nr = estadoActual.posicion.first;
                     int nc = estadoActual.posicion.second;
-                    array<int,6> nuevaOrientacion; 
+                    int nuevaOrientacion; 
 
                     if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
                         nr = nuevor;
                         nc = nuevoc; 
 
                         if(d == 0) 
-                            nuevaOrientacion = norte(estadoActual.orientacion);
+                            nuevaOrientacion = norte(estadoActual.carasOro);
                         else if(d == 1) 
-                            nuevaOrientacion = oeste(estadoActual.orientacion);
+                            nuevaOrientacion = oeste(estadoActual.carasOro);
                         else if(d == 2) 
-                            nuevaOrientacion = sur(estadoActual.orientacion);
+                            nuevaOrientacion = sur(estadoActual.carasOro);
                         else 
-                            nuevaOrientacion = este(estadoActual.orientacion);
+                            nuevaOrientacion = este(estadoActual.carasOro);
 
-                        int caraAbajo = nuevaOrientacion[0];
                         int costo = 0;
-                        long long int nuevasCeldasOro = estadoActual.celdasOro;
-                        int nuevasCarasOro = estadoActual.carasOro;
+                        int nuevasCeldasOro = estadoActual.celdasOro;
+                        int nuevasCarasOro = nuevaOrientacion;
 
-                        bool celdaTiene = (estadoActual.celdasOro & (1LL << (nr*grid[0].size() + nc)));
-                        bool caraTiene = (estadoActual.carasOro & (1 << (caraAbajo - 1)));
+                        bool celdaTiene = (estadoActual.celdasOro & (1 << (nr * grid[0].size() + nc)));
+                        bool caraTiene = (nuevasCarasOro & 1);
 
                         if(celdaTiene && !caraTiene){
                             costo = B;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
-                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else if(!celdaTiene && caraTiene){
                             costo = A;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1LL << (nr*grid[0].size() + nc));
-                            nuevasCarasOro = (estadoActual.carasOro ^ (1 << (caraAbajo - 1)));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else{
                             costo = A;
                         }
 
-                        state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
+                        state nuevoEstado = {{nr,nc}, nuevasCarasOro, nuevasCeldasOro};
 
                         if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
                             dist[nuevoEstado] = du + costo;
@@ -143,12 +167,10 @@ int main(){
 
     int casos;
     cin >> casos;
-    
-    
+
     for(int i = 0; i < casos; i++){
         int filas, columnas, A, B;
         cin >> filas >> columnas >> A >> B;
-        dist.clear();
 
         vector<string> grid(filas);
 
@@ -156,21 +178,20 @@ int main(){
             cin >> grid[j];
         }
 
-        array<int,6> orientacionInicial = {1, 6, 5, 4, 3, 2};
         int carasOro = 0;
-        long long int celdasOro = 0;
+        int celdasOro = 0;
         pair<int,int> posicionInicial;
 
         for(int i = 0; i < filas; i++){
             for(int j = 0; j < columnas; j++){
                 if(grid[i][j] == 'G')
-                    celdasOro = celdasOro ^ (1LL << (i * columnas + j));
+                    celdasOro = celdasOro ^ (1 << (i * columnas + j));
                 if(grid[i][j] == 'S')
                     posicionInicial = {i,j};
             }
         }
         
-        state estadoInicial = {posicionInicial, orientacionInicial, carasOro, celdasOro};
+        state estadoInicial = {posicionInicial, carasOro, celdasOro};
         int costo = dijkstra(grid, estadoInicial, A, B);
 
         if(costo != INT_MAX)

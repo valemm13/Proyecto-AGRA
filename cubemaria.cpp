@@ -8,34 +8,51 @@
 using namespace std;
 
 // Funciones para el movimiento del cubo
-array<int,6> norte(array<int,6> orientacion){
+array<int,6> norte(const array<int,6>& orientacion){
     int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
         sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
     return {nor, sur, arriba, abajo, este, oeste};
 }
 
-array<int,6> sur(array<int,6> orientacion){
+array<int,6> sur(const array<int,6>& orientacion){
     int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
         sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
     return {sur, nor, abajo, arriba, este, oeste};
 }
 
-array<int,6> este(array<int,6> orientacion){
+array<int,6> este(const array<int,6>& orientacion){
     int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
         sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
     return {este, oeste, nor, sur, arriba, abajo};
 }
 
-array<int,6> oeste(array<int,6> orientacion){
+array<int,6> oeste(const array<int,6>& orientacion){
     int abajo=orientacion[0], arriba=orientacion[1], nor=orientacion[2], 
         sur=orientacion[3], este=orientacion[4], oeste=orientacion[5];
     return {oeste, este, nor, sur, abajo, arriba};
 }
 
+int arrayToInt(const array<int,6>& arr){
+    int valor = 0;
+    for(int i = 0; i < 6; i++){
+        valor = valor * 10 + arr[i];
+    }
+    return valor;
+}
+
+array<int,6> intToArray(int valor){
+    array<int,6> arr;
+    for(int i = 5; i >= 0; i--){
+        arr[i] = valor % 10;
+        valor /= 10;
+    }
+    return arr;
+}
+
 // Estado
 struct state{
     pair<int, int> posicion;
-    array<int,6> orientacion;
+    int orientacion;
     int carasOro;
     long long int celdasOro;
 };
@@ -88,6 +105,8 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
 
                     int nr = estadoActual.posicion.first;
                     int nc = estadoActual.posicion.second;
+
+                    array<int,6> orientacionArr = intToArray(estadoActual.orientacion);
                     array<int,6> nuevaOrientacion; 
 
                     if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
@@ -95,13 +114,16 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
                         nc = nuevoc; 
 
                         if(d == 0) 
-                            nuevaOrientacion = norte(estadoActual.orientacion);
+                            nuevaOrientacion = norte(orientacionArr);
                         else if(d == 1) 
-                            nuevaOrientacion = oeste(estadoActual.orientacion);
+                            nuevaOrientacion = oeste(orientacionArr);
                         else if(d == 2) 
-                            nuevaOrientacion = sur(estadoActual.orientacion);
+                            nuevaOrientacion = sur(orientacionArr);
                         else 
-                            nuevaOrientacion = este(estadoActual.orientacion);
+                            nuevaOrientacion = este(orientacionArr);
+
+                        int nuevaOrientacionInt = arrayToInt(nuevaOrientacion);
+
 
                         int caraAbajo = nuevaOrientacion[0];
                         int costo = 0;
@@ -125,7 +147,7 @@ int dijkstra(vector<string> grid, state estadoInicial, int A, int B){
                             costo = A;
                         }
 
-                        state nuevoEstado = {{nr,nc}, nuevaOrientacion, nuevasCarasOro, nuevasCeldasOro};
+                        state nuevoEstado = {{nr,nc}, nuevaOrientacionInt, nuevasCarasOro, nuevasCeldasOro};
 
                         auto it = dist.find(nuevoEstado);
                         if(it == dist.end() || du + costo < it->second){
@@ -158,7 +180,7 @@ int main(){
             cin >> grid[j];
         }
 
-        array<int,6> orientacionInicial = {1, 6, 5, 4, 3, 2};
+        int orientacionInicial = 165432;;
         int carasOro = 0;
         long long int celdasOro = 0;
         pair<int,int> posicionInicial;

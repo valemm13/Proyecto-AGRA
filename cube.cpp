@@ -5,59 +5,47 @@
 #include <vector>
 using namespace std;
 
+int movimientoNorte[6] = {3,2,0,1,-1,-1};
+int movimientoSur[6] = {2,3,1,0,-1,-1};
+int movimientoEste[6] = {5,4,-1,-1,0,1};
+int movimientoOeste[6] = {4,5,-1,-1,1,0};
+
 // Funcion que hace la rotacion dependiendo la direccion
 int rotacion(int carasOro, int movimiento[6]){
-    int nuevoArray[6];
-    int arrayOriginal[6];
-
-    int x = carasOro;
-    for(int i = 0; i < 6; i++){
-        arrayOriginal[i] = x % 2;
-        x /= 2;
-    }
+    int ans = 0; 
 
     for(int i = 0; i < 6; i++){
-        if(movimiento[i] != -1){
-            nuevoArray[movimiento[i]] = arrayOriginal[i];
-        }else{
-            nuevoArray[i] = arrayOriginal[i];
+        int bit = (carasOro >> i) & 1; 
+
+        if(bit == 1){
+            int destino; 
+            if(movimiento[i] != -1)
+                destino = movimiento[i];
+            else 
+                destino = i;
+
+            ans = ans | (1 << destino);
         }
     }
-
-    int ans = 0;
-    for(int i = 5; i >= 0; i--){
-        ans = ans * 2 + nuevoArray[i];
-    }
-
     return ans;
 }
 
 // Funciones para el movimiento del cubo
 int norte(int carasOro){ 
-    int movimientoNorte[6] = {3,2,0,1,-1,-1};
-    int ans = rotacion(carasOro,movimientoNorte);
-    return ans;
+    return rotacion(carasOro, movimientoNorte);
 }
 
 int sur(int carasOro){ 
-    int movimientoSur[6] = {2,3,1,0,-1,-1};
-    int ans = rotacion(carasOro,movimientoSur);
-    return ans;
+    return rotacion(carasOro,movimientoSur);
 }
 
 int este(int carasOro){
-    int movimientoEste[6] = {5,4,-1,-1,0,1};
-    int ans = rotacion(carasOro,movimientoEste);
-
-    return ans;
+    return rotacion(carasOro,movimientoEste);
 
 }
 
 int oeste(int carasOro){ 
-    int movimientoOeste[6] = {4,5,-1,-1,1,0};
-    int ans = rotacion(carasOro,movimientoOeste);
-
-    return ans;
+    return rotacion(carasOro,movimientoOeste);
 }
 
 // Estado
@@ -94,7 +82,9 @@ int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
     pq.push({0,estadoInicial});
     bool flag = false;
     int costoFinal = INT_MAX;
-
+    int fila = grid.size();
+    int columna = grid[0].size();
+    
     while(!pq.empty() && !flag){
         int du = pq.top().first;
         state estadoActual = pq.top().second;
@@ -113,8 +103,9 @@ int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
                     int nr = estadoActual.posicion.first;
                     int nc = estadoActual.posicion.second;
                     int nuevaOrientacion; 
-
-                    if (0 <= nuevor && nuevor < grid.size() && 0 <= nuevoc && nuevoc < grid[0].size()){
+                    
+                    
+                    if (0 <= nuevor && nuevor < fila && 0 <= nuevoc && nuevoc < columna){
                         nr = nuevor;
                         nc = nuevoc; 
 
@@ -131,17 +122,17 @@ int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
                         int nuevasCeldasOro = estadoActual.celdasOro;
                         int nuevasCarasOro = nuevaOrientacion;
 
-                        bool celdaTiene = (estadoActual.celdasOro & (1 << (nr * grid[0].size() + nc)));
+                        bool celdaTiene = (estadoActual.celdasOro & (1 << (nr * columna + nc)));
                         bool caraTiene = (nuevasCarasOro & 1);
 
                         if(celdaTiene && !caraTiene){
                             costo = B;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * columna + nc));
                             nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else if(!celdaTiene && caraTiene){
                             costo = A;
-                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * grid[0].size() + nc));
+                            nuevasCeldasOro = nuevasCeldasOro ^ (1 << (nr * columna + nc));
                             nuevasCarasOro = (nuevasCarasOro ^ 1);
                         }
                         else{
@@ -149,8 +140,9 @@ int dijkstra(vector<string> &grid, state &estadoInicial, int A, int B){
                         }
 
                         state nuevoEstado = {{nr,nc}, nuevasCarasOro, nuevasCeldasOro};
+                        map<state, int, classComp>::iterator it = dist.find(nuevoEstado);
 
-                        if(dist.find(nuevoEstado) == dist.end() || du + costo < dist[nuevoEstado]){
+                        if(it == dist.end() || du + costo < it->second){
                             dist[nuevoEstado] = du + costo;
                             pq.push({du + costo, nuevoEstado});
                         }
